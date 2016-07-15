@@ -124,7 +124,7 @@ Release Name will be passed as 'releaseName', which will be used to load the Fmb
 task formTask << {
 	project.logger.quiet("*************************************Task : formTask*******************************************") 
 	project.logger.quiet("***server Name passed :: {},  release Name passed :: {} ",env, releaseName) 
-	
+	def fmbDirectory = 	config.LOCAL_FMB_DIRECTORY.replaceAll("releaseName",releaseName)
 	project.logger.quiet("***fmb Files Directory :: {} ",fmbDirectory) 
 	
 	project.logger.quiet("***Extract the file names to generate the fmx Files ")
@@ -207,7 +207,7 @@ task informaticaJob << {
 
 
 /*The Single task will be responsible to run all the task required for the DB Form Execution
-run Command : gradlew compileDbForm -Penv=DEV1 -PreleaseName=2016-05
+run Command : gradlew compileDbForm -Penv=DEV1 -PreleaseName=2016-05 -Papplication=PDH
 Order of the tasks are defined over here
 1. loadConfiguration
 2. createTempReleaseFolder
@@ -221,7 +221,7 @@ task compileDbForm(dependsOn:['createTempReleaseFolder','loadConfiguration','fmb
 }
 
 /*The Single task will be responsible to run all the task required for the DB Package Execution
-run Command : gradlew compileDbPackage -Penv=DEV1 -PreleaseName=2016-05
+run Command : gradlew compileDbPackage -Penv=DEV1 -PreleaseName=2016-05 -Papplication=PDH
 Order of the tasks are defined over here
 1. loadConfiguration
 2. liquibaseTask
@@ -232,7 +232,12 @@ task compileDbPackage(dependsOn:['liquibaseTask','update','loadConfiguration']){
 	//println"in task compilePackage"
 }
 
-
+/*The Single task will be responsible to run all the task required for the informatica Package Execution
+run Command : gradlew compileInformaticaPackage -Penv=DEV1 -PreleaseName=2016-05 -Papplication=OTG
+Order of the tasks are defined over here
+1. loadConfiguration
+2. informaticaJob
+*/
 task compileInformaticaPackage(dependsOn:['informaticaJob','loadConfiguration']){
 	description 'Running Informatica jobs to invoke workflow scripts'
 	//println"in task compileInformaticaPackage"
