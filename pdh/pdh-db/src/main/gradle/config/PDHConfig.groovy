@@ -4,11 +4,6 @@ environments {
 		    host='10.213.8.123'
 		    user='mhedev'
 			password='p@ssDEV1'
-		}		
-		informaticaServer {
-		    host='10.213.243.31'
-		    user='unagaich'
-			password='winter1'
 		}
 		database {
 			host='10.213.242.202'

@@ -1,5 +1,3 @@
-//start of Global configuration
-
 buildscript {
     repositories {
         mavenCentral()
@@ -23,10 +21,6 @@ ssh.settings {
   dryRun = project.hasProperty('dryRun')
   knownHosts = allowAnyHosts
 }
-//end of Global configuration
-
-//start of different tasks
-
 
 //configures the liquibase Task
 task liquibaseTask << {
@@ -49,7 +43,7 @@ if(!hasProperty('env') || getProperty('env').toString().isEmpty()) throw new Inv
 
 if(!hasProperty('releaseName') || getProperty('releaseName').toString().isEmpty()) throw new InvalidUserDataException("releaseName was null, Please provide the releaseName parameter while running the task")
 
-//no change is needed for this task
+
 
 //loadConfiguration is needed to load the configuration details from the config file "src/main/gradle/config/PDHConfig.groovy"
 task loadConfiguration << {
@@ -58,31 +52,37 @@ task loadConfiguration << {
 	project.logger.quiet("*************************************Task : loadConfiguration*******************************************")
 	
 	def environment = project.hasProperty('env') ? project.getProperty('env') : 'DEV1'
-	logger.quiet "Loading configuration for environment {}",environment
+	project.logger.quiet( "Loading configuration for environment {}",environment )
 	
 	
 	def release = project.getProperty('releaseName')
-	logger.quiet "Loading configuration for releaseName {}",release
+	project.logger.quiet("Loading configuration for releaseName {}",release )
+	
+	def applicationName = project.getProperty('application')
+	project.logger.quiet("Loading configuration for applicationName {}",applicationName)
+	
+	
+	def masterConfigFile = file("src/main/gradle/config/MasterConfig.groovy")
+	def masterConfig = new ConfigSlurper(applicationName).parse(masterConfigFile.toURL())
+	
+	project.logger.quiet("Loading configuration for application :: {}, Config File Path :: {} ",applicationName, masterConfig.CONFIG_FILE )
 	
 
-	def configFile = file("src/main/gradle/config/PDHConfig.groovy")
-	def parsedConfig = new ConfigSlurper(env).parse(configFile.toURL())
+	def applicationConfigFile = file(masterConfig.CONFIG_FILE)
+	def parsedApplicationConfig = new ConfigSlurper(env).parse(applicationConfigFile.toURL())
 	
 	allprojects {
 		ext{
-			config = parsedConfig
+			config = parsedApplicationConfig
 			env = environment
 			databasebUrl = 'jdbc:oracle:thin:@'+config.database.host+':'+config.database.port+'/'+config.database.service
 			releaseName = release
-			fmbDirectory = 	config.LOCAL_FMB_DIRECTORY.replaceAll("releaseName",releaseName)
 		}
 	}
-	logger.quiet "Loading configuration for databasebUrl {}",databasebUrl
+	project.logger.quiet("Loading configuration for databasebUrl {}",databasebUrl)
 	project.logger.quiet("***configuration loaded :: {} ",config)
 	
 }
-
-//no change is needed for this task
 
 // Create  the remote temporary  folder, if it doesn't exists
 task createTempReleaseFolder << {
@@ -111,7 +111,7 @@ task fmbFileCopy << {
 	ssh.run {
     	session(config.server) {
     		project.logger.quiet("*** fmbFileCopy started for : {} from the fmb Directory : {}",config.server.host,fmbDirectory)
-      		put from: fmbDirectory+'/*.fmb', into: config.REMOTE_FORM_DIRECTORY+'/release'
+      		put from: fmbDirectory+'/*.fmb', into: '/env346/Norashr/DEV1/dev1appl/mheau/11.5.0/forms/US/release'
       		project.logger.quiet("*** fmbFileCopy finished for : {}",config.server.host)
     	}
   	}
@@ -189,7 +189,6 @@ task fmbFileRemove << {
   	}
 }
 
-
 // Run the informatica workflow scripts 
 task informaticaJob << {
     project.logger.quiet("*************************************Task : informaticaJob *******************************************")
@@ -209,14 +208,12 @@ task informaticaJob << {
 
 /*The Single task will be responsible to run all the task required for the DB Form Execution
 run Command : gradlew compileDbForm -Penv=DEV1 -PreleaseName=2016-05
-
 Order of the tasks are defined over here
 1. loadConfiguration
 2. createTempReleaseFolder
 3. fmbFileCopy
 4. formTask
 5. fmbFileRemove
-
 */
 task compileDbForm(dependsOn:['createTempReleaseFolder','loadConfiguration','fmbFileCopy','formTask','fmbFileRemove']){
 	description 'Single task responsible to run all the task required for the DB Form Execution'
@@ -225,7 +222,6 @@ task compileDbForm(dependsOn:['createTempReleaseFolder','loadConfiguration','fmb
 
 /*The Single task will be responsible to run all the task required for the DB Package Execution
 run Command : gradlew compileDbPackage -Penv=DEV1 -PreleaseName=2016-05
-
 Order of the tasks are defined over here
 1. loadConfiguration
 2. liquibaseTask
